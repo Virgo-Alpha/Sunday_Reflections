@@ -1,4 +1,3 @@
-import jsPDF from 'jspdf';
 import { ReflectionAnswers, REFLECTION_QUESTIONS } from './reflections';
 import { format } from 'date-fns';
 
@@ -7,6 +6,13 @@ export const exportToPDF = (
   weekStartDate: Date,
   filename?: string
 ) => {
+  // Only run in browser environment
+  if (typeof window === 'undefined') {
+    throw new Error('PDF export is only available in browser environment');
+  }
+
+  // Dynamically import jsPDF only in browser
+  const jsPDF = require('jspdf');
   const pdf = new jsPDF();
   const pageWidth = pdf.internal.pageSize.getWidth();
   const margin = 20;
@@ -85,6 +91,11 @@ export const exportToWord = (
   weekStartDate: Date,
   filename?: string
 ) => {
+  // Only run in browser environment
+  if (typeof window === 'undefined') {
+    throw new Error('Word export is only available in browser environment');
+  }
+
   let content = `Sunday Reflections\n`;
   content += `Week of ${format(weekStartDate, 'MMMM d, yyyy')}\n\n`;
   content += `${'='.repeat(50)}\n\n`;
@@ -117,6 +128,11 @@ export const exportToJSON = (
   weekStartDate: Date,
   filename?: string
 ) => {
+  // Only run in browser environment
+  if (typeof window === 'undefined') {
+    throw new Error('JSON export is only available in browser environment');
+  }
+
   const exportData = {
     title: 'Sunday Reflections',
     weekStartDate: format(weekStartDate, 'yyyy-MM-dd'),

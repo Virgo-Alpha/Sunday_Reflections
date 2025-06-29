@@ -1,7 +1,15 @@
-import CryptoJS from 'crypto-js';
+let CryptoJS: any = null;
+
+// Only import CryptoJS in the browser
+if (typeof window !== 'undefined') {
+  CryptoJS = require('crypto-js');
+}
 
 export class ReflectionCrypto {
   private static deriveKey(passphrase: string, salt: string): string {
+    if (!CryptoJS) {
+      throw new Error('CryptoJS is not available in server environment');
+    }
     return CryptoJS.PBKDF2(passphrase, salt, {
       keySize: 256 / 32,
       iterations: 10000,
@@ -9,6 +17,9 @@ export class ReflectionCrypto {
   }
 
   static encrypt(data: any, passphrase: string): string {
+    if (!CryptoJS) {
+      throw new Error('CryptoJS is not available in server environment');
+    }
     const salt = CryptoJS.lib.WordArray.random(128 / 8).toString();
     const key = this.deriveKey(passphrase, salt);
     const encrypted = CryptoJS.AES.encrypt(JSON.stringify(data), key).toString();
@@ -20,6 +31,9 @@ export class ReflectionCrypto {
   }
 
   static decrypt(encryptedData: string, passphrase: string): any {
+    if (!CryptoJS) {
+      throw new Error('CryptoJS is not available in server environment');
+    }
     try {
       const { salt, encrypted } = JSON.parse(encryptedData);
       const key = this.deriveKey(passphrase, salt);
