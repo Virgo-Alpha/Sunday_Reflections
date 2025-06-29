@@ -21,7 +21,7 @@ import {
 import { getProfile } from '@/lib/profile';
 import { exportToPDF, exportToWord, exportToJSON } from '@/lib/export';
 import { useToast } from '@/hooks/use-toast';
-import { format, addDays } from 'date-fns';
+import { format as formatDate, addDays } from 'date-fns';
 import { ArrowLeft, Save, CheckCircle, Lock, PartyPopper, MoreVertical, Download, Trash2, Edit } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
@@ -179,7 +179,7 @@ export const ReflectionForm: React.FC = () => {
   };
 
   const handleExport = (exportFormat: 'pdf' | 'word' | 'json') => {
-    const filename = `reflection-${format(weekStartDate, 'yyyy-MM-dd')}`;
+    const filename = `reflection-${formatDate(weekStartDate, 'yyyy-MM-dd')}`;
     
     switch (exportFormat) {
       case 'pdf':
@@ -212,7 +212,7 @@ export const ReflectionForm: React.FC = () => {
     return (answeredQuestions / REFLECTION_QUESTIONS.length) * 100;
   };
 
-  const isCurrentWeek = format(weekStartDate, 'yyyy-MM-dd') === format(getCurrentWeekStart(userTimezone), 'yyyy-MM-dd');
+  const isCurrentWeek = formatDate(weekStartDate, 'yyyy-MM-dd') === formatDate(getCurrentWeekStart(userTimezone), 'yyyy-MM-dd');
   const weekEndDate = addDays(weekStartDate, 6);
   const isReadOnly = isLocked || (isCompleted && !isEditMode);
 
@@ -350,7 +350,7 @@ export const ReflectionForm: React.FC = () => {
                 )}
               </CardTitle>
               <CardDescription>
-                Week of {format(weekStartDate, 'MMMM d')} - {format(weekEndDate, 'MMMM d, yyyy')}
+                Week of {formatDate(weekStartDate, 'MMMM d')} - {formatDate(weekEndDate, 'MMMM d, yyyy')}
               </CardDescription>
               <div className="space-y-2">
                 <div className="flex justify-between text-sm">
