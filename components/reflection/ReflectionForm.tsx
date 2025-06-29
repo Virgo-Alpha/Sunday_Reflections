@@ -178,10 +178,10 @@ export const ReflectionForm: React.FC = () => {
     }
   };
 
-  const handleExport = (format: 'pdf' | 'word' | 'json') => {
+  const handleExport = (exportFormat: 'pdf' | 'word' | 'json') => {
     const filename = `reflection-${format(weekStartDate, 'yyyy-MM-dd')}`;
     
-    switch (format) {
+    switch (exportFormat) {
       case 'pdf':
         exportToPDF(answers, weekStartDate, `${filename}.pdf`);
         break;
@@ -195,7 +195,7 @@ export const ReflectionForm: React.FC = () => {
 
     toast({
       title: 'Export successful',
-      description: `Your reflection has been exported as ${format.toUpperCase()}.`,
+      description: `Your reflection has been exported as ${exportFormat.toUpperCase()}.`,
     });
   };
 
