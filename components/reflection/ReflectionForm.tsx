@@ -53,6 +53,13 @@ export const ReflectionForm: React.FC = () => {
   const [isCompleted, setIsCompleted] = useState(false);
   const [isEditMode, setIsEditMode] = useState(false);
 
+  // Helper function to safely call toast only in browser environment
+  const safeToast = (toastOptions: any) => {
+    if (typeof window !== 'undefined') {
+      toast(toastOptions);
+    }
+  };
+
   useEffect(() => {
     const loadReflection = async () => {
       if (!user || !passphrase) return;
@@ -87,7 +94,7 @@ export const ReflectionForm: React.FC = () => {
       } catch (error: any) {
         console.error('Error loading reflection:', error);
         if (error.message.includes('passphrase')) {
-          toast({
+          safeToast({
             title: 'Invalid passphrase',
             description: 'Please refresh and enter the correct passphrase.',
             variant: 'destructive',
@@ -99,7 +106,7 @@ export const ReflectionForm: React.FC = () => {
     };
 
     loadReflection();
-  }, [user, passphrase, searchParams, toast]);
+  }, [user, passphrase, searchParams]);
 
   const handleAnswerChange = (questionId: string, value: string) => {
     setAnswers(prev => ({
@@ -110,7 +117,7 @@ export const ReflectionForm: React.FC = () => {
 
   const handleSave = async (markCompleted: boolean = false) => {
     if (!user || !passphrase) {
-      toast({
+      safeToast({
         title: 'Error',
         description: 'User or passphrase not available.',
         variant: 'destructive',
@@ -131,23 +138,25 @@ export const ReflectionForm: React.FC = () => {
         setIsCompleted(true);
         setIsEditMode(false);
         setShowCompletionMessage(true);
-        toast({
+        safeToast({
           title: 'Reflection completed! 🎉',
           description: 'Your weekly reflection has been completed and saved.',
         });
         // Redirect to dashboard after showing completion message
         setTimeout(() => {
-          router.push('/dashboard');
+          if (typeof window !== 'undefined') {
+            router.push('/dashboard');
+          }
         }, 7000);
       } else {
-        toast({
+        safeToast({
           title: 'Draft saved',
           description: 'Your reflection has been saved. You can continue later.',
         });
       }
     } catch (error: any) {
       console.error('Save error:', error);
-      toast({
+      safeToast({
         title: 'Save failed',
         description: error.message || 'An error occurred while saving.',
         variant: 'destructive',
@@ -162,14 +171,16 @@ export const ReflectionForm: React.FC = () => {
 
     try {
       await deleteReflection(reflectionId);
-      toast({
+      safeToast({
         title: 'Reflection deleted',
         description: 'Your reflection has been successfully deleted.',
       });
-      router.push('/dashboard');
+      if (typeof window !== 'undefined') {
+        router.push('/dashboard');
+      }
     } catch (error: any) {
       console.error('Delete error:', error);
-      toast({
+      safeToast({
         title: 'Delete failed',
         description: error.message || 'An error occurred while deleting the reflection.',
         variant: 'destructive',
@@ -178,29 +189,40 @@ export const ReflectionForm: React.FC = () => {
   };
 
   const handleExport = (exportFormat: 'pdf' | 'word' | 'json') => {
+    if (typeof window === 'undefined') return;
+
     const filename = `reflection-${formatDate(weekStartDate, 'yyyy-MM-dd')}`;
     
-    switch (exportFormat) {
-      case 'pdf':
-        exportToPDF(answers, weekStartDate, `${filename}.pdf`);
-        break;
-      case 'word':
-        exportToWord(answers, weekStartDate, `${filename}.txt`);
-        break;
-      case 'json':
-        exportToJSON(answers, weekStartDate, `${filename}.json`);
-        break;
-    }
+    try {
+      switch (exportFormat) {
+        case 'pdf':
+          exportToPDF(answers, weekStartDate, `${filename}.pdf`);
+          break;
+        case 'word':
+          exportToWord(answers, weekStartDate, `${filename}.txt`);
+          break;
+        case 'json':
+          exportToJSON(answers, weekStartDate, `${filename}.json`);
+          break;
+      }
 
-    toast({
-      title: 'Export successful',
-      description: `Your reflection has been exported as ${exportFormat.toUpperCase()}.`,
-    });
+      safeToast({
+        title: 'Export successful',
+        description: `Your reflection has been exported as ${exportFormat.toUpperCase()}.`,
+      });
+    } catch (error: any) {
+      console.error('Export error:', error);
+      safeToast({
+        title: 'Export failed',
+        description: 'An error occurred while exporting the reflection.',
+        variant: 'destructive',
+      });
+    }
   };
 
   const handleEnableEdit = () => {
     setIsEditMode(true);
-    toast({
+    safeToast({
       title: 'Edit mode enabled',
       description: 'You can now update your completed reflection.',
     });
