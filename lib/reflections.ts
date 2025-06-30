@@ -138,13 +138,9 @@ export const getReflection = async (
       .eq('user_id', userId)
       .eq('week_start_date', weekStartString)
       .eq('is_deleted', false)
-      .single();
+      .maybeSingle();
 
     if (error) {
-      if (error.code === 'PGRST116') {
-        // No rows returned - reflection doesn't exist
-        return null;
-      }
       console.error('Supabase error:', error);
       throw new Error(`Failed to get reflection: ${error.message}`);
     }
