@@ -11,17 +11,17 @@ export default function ReflectPage() {
   const { user, loading } = useAuth();
   const { isPassphraseSet } = usePassphrase();
   const router = useRouter();
-  const [redirecting, setRedirecting] = useState(false); // Track redirect state
+  const [isRedirecting, setIsRedirecting] = useState(false); // Track redirect state
 
-  // Trigger redirect only once the loading is done and the user is not available
   useEffect(() => {
-    if (!loading && !user && !redirecting) {
-      setRedirecting(true); // Set to true to prevent further redirects
+    // Only redirect if loading is complete and user is still not logged in
+    if (!loading && !user && !isRedirecting) {
+      setIsRedirecting(true); // Prevent additional redirects
       router.push('/');
     }
-  }, [user, loading, router, redirecting]);
+  }, [user, loading, isRedirecting, router]);
 
-  if (loading || redirecting) {
+  if (loading || isRedirecting) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
@@ -30,7 +30,7 @@ export default function ReflectPage() {
   }
 
   if (!user) {
-    return null; // Will redirect
+    return null; // Will redirect if no user
   }
 
   if (!isPassphraseSet) {

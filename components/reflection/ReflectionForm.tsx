@@ -42,7 +42,6 @@ export const ReflectionForm: React.FC = () => {
   });
   
   const [currentQuestion, setCurrentQuestion] = useState(0);
-  const [isLoading, setIsLoading] = useState(false); // Changed from true to false
   const [isSaving, setIsSaving] = useState(false);
   const [weekStartDate, setWeekStartDate] = useState<Date>(getCurrentWeekStart());
   const [isLocked, setIsLocked] = useState(false);
@@ -64,12 +63,9 @@ export const ReflectionForm: React.FC = () => {
       // Early return if user or passphrase not available
       if (!user || !passphrase) {
         console.log('🔍 ReflectionForm: User or passphrase not available, skipping load');
-        setIsLoading(false);
         return;
       }
 
-      // Set loading to true only after confirming we have required data
-      setIsLoading(true);
       console.log('🔄 ReflectionForm: Starting to load reflection data');
 
       try {
@@ -121,9 +117,6 @@ export const ReflectionForm: React.FC = () => {
             variant: 'destructive',
           });
         }
-      } finally {
-        console.log('🏁 ReflectionForm: Load complete, setting isLoading to false');
-        setIsLoading(false);
       }
     };
 
@@ -258,17 +251,6 @@ export const ReflectionForm: React.FC = () => {
   const isCurrentWeek = formatDate(weekStartDate, 'yyyy-MM-dd') === formatDate(getCurrentWeekStart(userTimezone), 'yyyy-MM-dd');
   const weekEndDate = addDays(weekStartDate, 6);
   const isReadOnly = isLocked || (isCompleted && !isEditMode);
-
-  if (isLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800">
-        <div className="text-center space-y-4">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
-          <p className="text-gray-600 dark:text-gray-400">Loading your reflection...</p>
-        </div>
-      </div>
-    );
-  }
 
   if (showCompletionMessage) {
     return (
