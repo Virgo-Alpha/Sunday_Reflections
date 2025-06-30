@@ -58,11 +58,14 @@ export const ReflectionForm: React.FC = () => {
     }
   };
 
+  // ✅ GRAB A STABLE VALUE FROM THE USER OBJECT
+  const userId = user?.id;
+
   useEffect(() => {
     const loadReflection = async () => {
-      // Early return if user or passphrase not available
-      if (!user || !passphrase) {
-        console.log('🔍 ReflectionForm: User or passphrase not available, skipping load');
+      // ✅ CHECK AGAINST THE STABLE userId
+      if (!userId || !passphrase) {
+        console.log('🔍 ReflectionForm: User ID or passphrase not available, skipping load');
         return;
       }
 
@@ -71,7 +74,8 @@ export const ReflectionForm: React.FC = () => {
       try {
         // Get user timezone
         console.log('🌍 Getting user profile for timezone...');
-        const profile = await getProfile(user.id);
+        // ✅ USE THE STABLE userId
+        const profile = await getProfile(userId);
         const timezone = profile?.timezone || 'UTC';
         setUserTimezone(timezone);
         console.log('✅ User timezone set to:', timezone);
@@ -88,7 +92,8 @@ export const ReflectionForm: React.FC = () => {
 
         // Try to load existing reflection
         console.log('🔍 Attempting to load existing reflection...');
-        const existingReflection = await getReflection(user.id, targetWeekStart, passphrase);
+        // ✅ USE THE STABLE userId
+        const existingReflection = await getReflection(userId, targetWeekStart, passphrase);
         
         if (existingReflection) {
           console.log('✅ Found existing reflection:', existingReflection.reflection.id);
@@ -121,7 +126,8 @@ export const ReflectionForm: React.FC = () => {
     };
 
     loadReflection();
-  }, [user, passphrase, router.query.week]);
+  // ✅ USE THE STABLE userId IN THE DEPENDENCY ARRAY
+  }, [userId, passphrase, router.query.week]);
 
   const handleAnswerChange = (questionId: string, value: string) => {
     setAnswers(prev => ({
@@ -131,7 +137,8 @@ export const ReflectionForm: React.FC = () => {
   };
 
   const handleSave = async (markCompleted: boolean = false) => {
-    if (!user || !passphrase) {
+    // ✅ It's good practice to use the stable userId here too
+    if (!userId || !passphrase) {
       safeToast({
         title: 'Error',
         description: 'User or passphrase not available.',
@@ -142,7 +149,7 @@ export const ReflectionForm: React.FC = () => {
 
     setIsSaving(true);
     try {
-      const savedReflection = await saveReflection(user.id, weekStartDate, answers, passphrase, markCompleted, reflectionId);
+      const savedReflection = await saveReflection(userId, weekStartDate, answers, passphrase, markCompleted, reflectionId);
       
       // Update the reflection ID if this was a new reflection
       if (!reflectionId && savedReflection?.id) {
