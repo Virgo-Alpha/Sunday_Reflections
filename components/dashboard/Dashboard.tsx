@@ -26,37 +26,57 @@ export const Dashboard: React.FC = () => {
   const [currentWeekReflection, setCurrentWeekReflection] = useState<any>(null);
   const [userTimezone, setUserTimezone] = useState('UTC');
   const [loading, setLoading] = useState(true);
-
-  const currentWeekStart = getCurrentWeekStart(userTimezone);
-  const currentWeekEnd = addDays(currentWeekStart, 6);
-  const isCurrentWeekLocked = isReflectionLocked(currentWeekStart, userTimezone);
+  const [currentWeekStart, setCurrentWeekStart] = useState<Date>(new Date());
 
   useEffect(() => {
     const loadData = async () => {
-      if (!user || !passphrase) return;
+      if (!user || !passphrase) {
+        setLoading(false);
+        return;
+      }
 
       try {
-        // Load user profile
-        const profile = await getProfile(user.id);
-        if (profile) {
-          setUserTimezone(profile.timezone);
+        // Load user profile first to get timezone
+        let timezone = 'UTC';
+        try {
+          const profile = await getProfile(user.id);
+          if (profile?.timezone) {
+            timezone = profile.timezone;
+            setUserTimezone(timezone);
+          }
+        } catch (profileError) {
+          console.warn('Could not load user profile, using UTC timezone:', profileError);
+          // Continue with UTC timezone
         }
 
-        // Load reflections
-        const userReflections = await getUserReflections(user.id);
-        setReflections(userReflections);
+        // Calculate current week start with the correct timezone
+        const weekStart = getCurrentWeekStart(timezone);
+        setCurrentWeekStart(weekStart);
 
-        // Find current week reflection
-        const currentWeekString = format(currentWeekStart, 'yyyy-MM-dd');
-        const currentReflection = userReflections.find(
-          r => r.week_start_date === currentWeekString
-        );
-        setCurrentWeekReflection(currentReflection);
+        // Load reflections
+        try {
+          const userReflections = await getUserReflections(user.id);
+          setReflections(userReflections);
+
+          // Find current week reflection
+          const currentWeekString = format(weekStart, 'yyyy-MM-dd');
+          const currentReflection = userReflections.find(
+            r => r.week_start_date === currentWeekString
+          );
+          setCurrentWeekReflection(currentReflection);
+        } catch (reflectionsError) {
+          console.error('Error loading reflections:', reflectionsError);
+          toast({
+            title: 'Error loading reflections',
+            description: 'Could not load your past reflections. Please try refreshing the page.',
+            variant: 'destructive',
+          });
+        }
       } catch (error) {
         console.error('Error loading dashboard data:', error);
         toast({
           title: 'Error loading data',
-          description: 'Some data may not be available. Please try refreshing.',
+          description: 'Some data may not be available. Please check your connection and try refreshing.',
           variant: 'destructive',
         });
       } finally {
@@ -65,7 +85,10 @@ export const Dashboard: React.FC = () => {
     };
 
     loadData();
-  }, [user, passphrase, currentWeekStart, toast]);
+  }, [user, passphrase, toast]);
+
+  const currentWeekEnd = addDays(currentWeekStart, 6);
+  const isCurrentWeekLocked = isReflectionLocked(currentWeekStart, userTimezone);
 
   const handleSignOut = async () => {
     try {

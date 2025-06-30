@@ -1,63 +1,44 @@
 import { supabase } from './supabase';
-import { ReflectionCrypto } from './crypto';
-import { startOfWeek, format, addDays, isBefore } from 'date-fns';
+import { encrypt, decrypt } from './crypto';
+import { startOfWeek, addDays, isAfter, format } from 'date-fns';
+import { zonedTimeToUtc, utcToZonedTime } from 'date-fns-tz';
 
 export interface ReflectionAnswers {
-  question1: string; // What has worked well?
-  question2: string; // What didn't work so well?
-  question3: string; // How can I apply what I have learned?
-  question4: string; // How much of my day was spent doing things I actively enjoyed?
-  question5: string; // How'd that compare to the week before?
-  question6: string; // What would you do if you knew you could not fail?
-  question7: string; // When are you going to get out of your comfort zone?
+  [questionId: string]: string;
 }
 
-export const REFLECTION_QUESTIONS = [
-  {
-    id: 'question1',
-    text: 'What has worked well?',
-    description: 'Reflect on recent successes or effective actions to identify what to continue or amplify.',
-  },
-  {
-    id: 'question2',
-    text: 'What didn\'t work so well?',
-    description: 'Evaluate setbacks or challenges to understand what needs improvement or avoidance.',
-  },
-  {
-    id: 'question3',
-    text: 'How can I apply what I have learned (actions)?',
-    description: 'Determine actionable steps based on insights from successes and failures to adjust future behavior or strategies.',
-  },
-  {
-    id: 'question4',
-    text: 'Looking back at last week, how much of my day was spent doing things I actively enjoyed?',
-    description: 'Assess how time was spent to ensure alignment with personal fulfillment and joy.',
-  },
-  {
-    id: 'question5',
-    text: 'How\'d that compare to the week before?',
-    description: 'Compare enjoyment levels week-to-week to track trends and make adjustments for a more fulfilling life.',
-  },
-  {
-    id: 'question6',
-    text: 'What would you do if you knew you could not fail?',
-    description: 'A thought-provoking question to uncover bold aspirations and overcome fear-based limitations.',
-  },
-  {
-    id: 'question7',
-    text: 'When are you going to get out of your comfort zone?',
-    description: 'Prompt to encourage taking risks or pursuing growth opportunities outside familiar routines.',
-  },
-];
+export interface Reflection {
+  id: string;
+  user_id: string;
+  week_start_date: string;
+  answers: ReflectionAnswers;
+  is_completed: boolean;
+  created_at: string;
+  updated_at: string;
+  locked_at: string | null;
+}
 
 export const getCurrentWeekStart = (timezone: string = 'UTC'): Date => {
   const now = new Date();
-  return startOfWeek(now, { weekStartsOn: 0 }); // Sunday = 0
+  const zonedNow = utcToZonedTime(now, timezone);
+  return startOfWeek(zonedNow, { weekStartsOn: 0 }); // Sunday = 0
 };
 
 export const isReflectionLocked = (weekStartDate: Date, timezone: string = 'UTC'): boolean => {
-  const mondayMidnight = addDays(weekStartDate, 1); // Monday after the week
-  return isBefore(mondayMidnight, new Date());
+  const now = new Date();
+  const zonedNow = utcToZonedTime(now, timezone);
+  
+  // Calculate the Monday after the week start (which is Sunday)
+  const mondayAfterWeek = addDays(weekStartDate, 1);
+  
+  // Set to midnight of that Monday in the user's timezone
+  const lockTime = new Date(mondayAfterWeek);
+  lockTime.setHours(0, 0, 0, 0);
+  
+  // Convert lock time to the user's timezone
+  const zonedLockTime = utcToZonedTime(lockTime, timezone);
+  
+  return isAfter(zonedNow, zonedLockTime);
 };
 
 export const saveReflection = async (
@@ -65,42 +46,31 @@ export const saveReflection = async (
   weekStartDate: Date,
   answers: ReflectionAnswers,
   passphrase: string,
-  isCompleted: boolean = false,
-  reflectionId?: string
-) => {
+  isCompleted: boolean = false
+): Promise<void> => {
   try {
-    const encryptedContent = await ReflectionCrypto.encrypt(answers, passphrase);
+    const encryptedContent = encrypt(JSON.stringify(answers), passphrase);
     const weekStartString = format(weekStartDate, 'yyyy-MM-dd');
 
-    const reflectionData = {
-      user_id: userId,
-      week_start_date: weekStartString,
-      encrypted_content: encryptedContent,
-      is_completed: isCompleted,
-      updated_at: new Date().toISOString(),
-    };
-
-    // If we have a reflection ID, include it for proper upsert behavior
-    if (reflectionId) {
-      (reflectionData as any).id = reflectionId;
-    }
-
-    const { data, error } = await supabase
+    const { error } = await supabase
       .from('reflections')
-      .upsert(reflectionData, {
+      .upsert({
+        user_id: userId,
+        week_start_date: weekStartString,
+        encrypted_content: encryptedContent,
+        is_completed: isCompleted,
+        updated_at: new Date().toISOString(),
+      }, {
         onConflict: 'user_id,week_start_date'
-      })
-      .select()
-      .single();
+      });
 
     if (error) {
-      console.error('Error saving reflection:', error);
-      throw error;
+      console.error('Supabase error:', error);
+      throw new Error(`Failed to save reflection: ${error.message}`);
     }
-    return data;
-  } catch (error) {
-    console.error('Error in saveReflection:', error);
-    throw error;
+  } catch (error: any) {
+    console.error('Save reflection error:', error);
+    throw new Error(`Failed to save reflection: ${error.message}`);
   }
 };
 
@@ -108,7 +78,7 @@ export const getReflection = async (
   userId: string,
   weekStartDate: Date,
   passphrase: string
-): Promise<{ answers: ReflectionAnswers; reflection: any } | null> => {
+): Promise<Reflection | null> => {
   try {
     const weekStartString = format(weekStartDate, 'yyyy-MM-dd');
 
@@ -122,62 +92,73 @@ export const getReflection = async (
 
     if (error) {
       if (error.code === 'PGRST116') {
-        // No reflection found - this is expected, return null silently
+        // No rows returned - reflection doesn't exist
         return null;
       }
-      console.error('Error fetching reflection:', error);
-      throw error;
+      console.error('Supabase error:', error);
+      throw new Error(`Failed to get reflection: ${error.message}`);
     }
 
     if (!data) return null;
 
     try {
-      const answers = await ReflectionCrypto.decrypt(data.encrypted_content, passphrase);
-      return { answers, reflection: data };
+      const decryptedContent = decrypt(data.encrypted_content, passphrase);
+      const answers = JSON.parse(decryptedContent);
+
+      return {
+        id: data.id,
+        user_id: data.user_id,
+        week_start_date: data.week_start_date,
+        answers,
+        is_completed: data.is_completed,
+        created_at: data.created_at,
+        updated_at: data.updated_at,
+        locked_at: data.locked_at,
+      };
     } catch (decryptError) {
       console.error('Decryption error:', decryptError);
-      throw new Error('Invalid passphrase');
+      throw new Error('Failed to decrypt reflection. Please check your passphrase.');
     }
-  } catch (error) {
-    console.error('Error in getReflection:', error);
+  } catch (error: any) {
+    console.error('Get reflection error:', error);
     throw error;
   }
 };
 
-export const getUserReflections = async (userId: string) => {
+export const getUserReflections = async (userId: string): Promise<any[]> => {
   try {
     const { data, error } = await supabase
       .from('reflections')
-      .select('*')
+      .select('id, user_id, week_start_date, is_completed, created_at, updated_at, locked_at')
       .eq('user_id', userId)
       .eq('is_deleted', false)
       .order('week_start_date', { ascending: false });
 
     if (error) {
-      console.error('Error fetching user reflections:', error);
-      throw error;
+      console.error('Supabase error:', error);
+      throw new Error(`Failed to get reflections: ${error.message}`);
     }
+
     return data || [];
-  } catch (error) {
-    console.error('Error in getUserReflections:', error);
+  } catch (error: any) {
+    console.error('Get user reflections error:', error);
     throw error;
   }
 };
 
-export const deleteReflection = async (reflectionId: string) => {
-  const { error } = await supabase
-    .from('reflections')
-    .update({ is_deleted: true })
-    .eq('id', reflectionId);
+export const deleteReflection = async (reflectionId: string): Promise<void> => {
+  try {
+    const { error } = await supabase
+      .from('reflections')
+      .update({ is_deleted: true, updated_at: new Date().toISOString() })
+      .eq('id', reflectionId);
 
-  if (error) throw error;
-};
-
-export const restoreReflection = async (reflectionId: string) => {
-  const { error } = await supabase
-    .from('reflections')
-    .update({ is_deleted: false })
-    .eq('id', reflectionId);
-
-  if (error) throw error;
+    if (error) {
+      console.error('Supabase error:', error);
+      throw new Error(`Failed to delete reflection: ${error.message}`);
+    }
+  } catch (error: any) {
+    console.error('Delete reflection error:', error);
+    throw error;
+  }
 };
