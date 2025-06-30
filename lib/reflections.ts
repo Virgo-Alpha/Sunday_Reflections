@@ -69,7 +69,7 @@ export const saveReflection = async (
   reflectionId?: string
 ) => {
   try {
-    const encryptedContent = ReflectionCrypto.encrypt(answers, passphrase);
+    const encryptedContent = await ReflectionCrypto.encrypt(answers, passphrase);
     const weekStartString = format(weekStartDate, 'yyyy-MM-dd');
 
     const reflectionData = {
@@ -132,7 +132,7 @@ export const getReflection = async (
     if (!data) return null;
 
     try {
-      const answers = ReflectionCrypto.decrypt(data.encrypted_content, passphrase);
+      const answers = await ReflectionCrypto.decrypt(data.encrypted_content, passphrase);
       return { answers, reflection: data };
     } catch (decryptError) {
       console.error('Decryption error:', decryptError);
