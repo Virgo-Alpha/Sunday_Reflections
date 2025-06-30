@@ -1,7 +1,7 @@
 import { ReflectionAnswers, REFLECTION_QUESTIONS } from './reflections';
 import { format } from 'date-fns';
 
-export const exportToPDF = (
+export const exportToPDF = async (
   answers: ReflectionAnswers,
   weekStartDate: Date,
   filename?: string
@@ -12,7 +12,7 @@ export const exportToPDF = (
   }
 
   // Dynamically import jsPDF only in browser
-  const jsPDF = require('jspdf');
+  const { default: jsPDF } = await import('jspdf');
   const pdf = new jsPDF();
   const pageWidth = pdf.internal.pageSize.getWidth();
   const margin = 20;
