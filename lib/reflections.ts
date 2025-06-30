@@ -1,7 +1,7 @@
 import { supabase } from './supabase';
 import { ReflectionCrypto } from './crypto';
 import { startOfWeek, addDays, isAfter, format } from 'date-fns';
-import { zonedTimeToUtc, utcToZonedTime } from 'date-fns-tz';
+import * as dateFnsTz from 'date-fns-tz';
 
 export interface ReflectionAnswers {
   question1: string;
@@ -64,13 +64,13 @@ export const REFLECTION_QUESTIONS = [
 
 export const getCurrentWeekStart = (timezone: string = 'UTC'): Date => {
   const now = new Date();
-  const zonedNow = utcToZonedTime(now, timezone);
+  const zonedNow = dateFnsTz.utcToZonedTime(now, timezone);
   return startOfWeek(zonedNow, { weekStartsOn: 0 }); // Sunday = 0
 };
 
 export const isReflectionLocked = (weekStartDate: Date, timezone: string = 'UTC'): boolean => {
   const now = new Date();
-  const zonedNow = utcToZonedTime(now, timezone);
+  const zonedNow = dateFnsTz.utcToZonedTime(now, timezone);
   
   // Calculate the Monday after the week start (which is Sunday)
   const mondayAfterWeek = addDays(weekStartDate, 1);
@@ -80,7 +80,7 @@ export const isReflectionLocked = (weekStartDate: Date, timezone: string = 'UTC'
   lockTime.setHours(0, 0, 0, 0);
   
   // Convert lock time to the user's timezone
-  const zonedLockTime = utcToZonedTime(lockTime, timezone);
+  const zonedLockTime = dateFnsTz.utcToZonedTime(lockTime, timezone);
   
   return isAfter(zonedNow, zonedLockTime);
 };
