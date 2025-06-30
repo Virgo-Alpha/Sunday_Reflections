@@ -24,6 +24,7 @@ import { useToast } from '@/hooks/use-toast';
 import { format as formatDate, addDays } from 'date-fns';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
+import { Save, CheckCircle, Edit, MoreVertical, Download, Trash2 } from 'lucide-react';
 
 export const ReflectionForm: React.FC = () => {
   const { user } = useAuth();
@@ -58,27 +59,26 @@ export const ReflectionForm: React.FC = () => {
     }
   };
 
-  // ✅ GRAB A STABLE VALUE FROM THE USER OBJECT
+  // Extract stable value from user object
   const userId = user?.id;
 
   useEffect(() => {
     const loadReflection = async () => {
-      // ✅ CHECK AGAINST THE STABLE userId
+      // Check against the stable userId
       if (!userId || !passphrase) {
-        console.log('🔍 ReflectionForm: User ID or passphrase not available, skipping load');
+        console.log('ReflectionForm: User ID or passphrase not available, skipping load');
         return;
       }
 
-      console.log('🔄 ReflectionForm: Starting to load reflection data');
+      console.log('ReflectionForm: Starting to load reflection data');
 
       try {
         // Get user timezone
-        console.log('🌍 Getting user profile for timezone...');
-        // ✅ USE THE STABLE userId
+        console.log('Getting user profile for timezone...');
         const profile = await getProfile(userId);
         const timezone = profile?.timezone || 'UTC';
         setUserTimezone(timezone);
-        console.log('✅ User timezone set to:', timezone);
+        console.log('User timezone set to:', timezone);
 
         // Determine which week to load
         const weekParam = router.query.week as string;
@@ -88,27 +88,26 @@ export const ReflectionForm: React.FC = () => {
         
         setWeekStartDate(targetWeekStart);
         setIsLocked(isReflectionLocked(targetWeekStart, timezone));
-        console.log('📅 Target week start:', targetWeekStart.toISOString());
+        console.log('Target week start:', targetWeekStart.toISOString());
 
         // Try to load existing reflection
-        console.log('🔍 Attempting to load existing reflection...');
-        // ✅ USE THE STABLE userId
+        console.log('Attempting to load existing reflection...');
         const existingReflection = await getReflection(userId, targetWeekStart, passphrase);
         
         if (existingReflection) {
-          console.log('✅ Found existing reflection:', existingReflection.reflection.id);
+          console.log('Found existing reflection:', existingReflection.reflection.id);
           setAnswers(existingReflection.answers);
           setReflectionId(existingReflection.reflection.id);
           setIsCompleted(existingReflection.reflection.is_completed);
           // If reflection is completed, start in read-only mode
           setIsEditMode(!existingReflection.reflection.is_completed);
         } else {
-          console.log('ℹ️ No existing reflection found, starting fresh');
+          console.log('No existing reflection found, starting fresh');
           // New reflection, start in edit mode
           setIsEditMode(true);
         }
       } catch (error: any) {
-        console.error('💥 Error loading reflection:', error);
+        console.error('Error loading reflection:', error);
         if (error.message.includes('passphrase')) {
           safeToast({
             title: 'Invalid passphrase',
@@ -126,7 +125,6 @@ export const ReflectionForm: React.FC = () => {
     };
 
     loadReflection();
-  // ✅ USE THE STABLE userId IN THE DEPENDENCY ARRAY
   }, [userId, passphrase, router.query.week]);
 
   const handleAnswerChange = (questionId: string, value: string) => {
@@ -137,7 +135,6 @@ export const ReflectionForm: React.FC = () => {
   };
 
   const handleSave = async (markCompleted: boolean = false) => {
-    // ✅ It's good practice to use the stable userId here too
     if (!userId || !passphrase) {
       safeToast({
         title: 'Error',
@@ -161,7 +158,7 @@ export const ReflectionForm: React.FC = () => {
         setIsEditMode(false);
         setShowCompletionMessage(true);
         safeToast({
-          title: 'Reflection completed! 🎉',
+          title: 'Reflection Completed!',
           description: 'Your weekly reflection has been completed and saved.',
         });
         // Redirect to dashboard after showing completion message
@@ -266,7 +263,7 @@ export const ReflectionForm: React.FC = () => {
           <CardContent className="p-8">
             <div className="mb-6">
               <div className="h-16 w-16 mx-auto bg-green-100 dark:bg-green-900 rounded-full flex items-center justify-center mb-4">
-                <div className="text-green-600 dark:text-green-400 text-2xl">🎉</div>
+                <CheckCircle className="text-green-600 dark:text-green-400 h-8 w-8" />
               </div>
               <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
                 Reflection Complete!
@@ -313,7 +310,8 @@ export const ReflectionForm: React.FC = () => {
               
               {isCompleted && !isEditMode && !isLocked && (
                 <Button variant="outline" size="sm" onClick={handleEnableEdit}>
-                  ✏️ Update Reflection
+                  <Edit className="mr-2 h-4 w-4" />
+                  Update Reflection
                 </Button>
               )}
               
@@ -321,18 +319,21 @@ export const ReflectionForm: React.FC = () => {
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <Button variant="outline" size="sm">
-                      ⋮
+                      <MoreVertical className="h-4 w-4" />
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end">
                     <DropdownMenuItem onClick={() => handleExport('pdf')}>
-                      📄 Export as PDF
+                      <Download className="mr-2 h-4 w-4" />
+                      Export as PDF
                     </DropdownMenuItem>
                     <DropdownMenuItem onClick={() => handleExport('word')}>
-                      📝 Export as Text
+                      <Download className="mr-2 h-4 w-4" />
+                      Export as Text
                     </DropdownMenuItem>
                     <DropdownMenuItem onClick={() => handleExport('json')}>
-                      📊 Export as JSON
+                      <Download className="mr-2 h-4 w-4" />
+                      Export as JSON
                     </DropdownMenuItem>
                     <DropdownMenuItem 
                       className="text-red-600 dark:text-red-400"
@@ -341,7 +342,8 @@ export const ReflectionForm: React.FC = () => {
                       <AlertDialog>
                         <AlertDialogTrigger asChild>
                           <div className="flex items-center w-full cursor-pointer">
-                            🗑️ Delete Reflection
+                            <Trash2 className="mr-2 h-4 w-4" />
+                            Delete Reflection
                           </div>
                         </AlertDialogTrigger>
                         <AlertDialogContent>
@@ -434,7 +436,8 @@ export const ReflectionForm: React.FC = () => {
                   </>
                 ) : (
                   <>
-                    💾 Save Draft
+                    <Save className="mr-2 h-4 w-4" />
+                    Save Draft
                   </>
                 )}
               </Button>
@@ -449,7 +452,8 @@ export const ReflectionForm: React.FC = () => {
                   </>
                 ) : (
                   <>
-                    ✅ Complete Reflection
+                    <CheckCircle className="mr-2 h-4 w-4" />
+                    Complete Reflection
                   </>
                 )}
               </Button>
