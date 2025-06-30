@@ -1,10 +1,16 @@
 import { supabase } from './supabase';
-import { encrypt, decrypt } from './crypto';
+import { ReflectionCrypto } from './crypto';
 import { startOfWeek, addDays, isAfter, format } from 'date-fns';
 import { zonedTimeToUtc, utcToZonedTime } from 'date-fns-tz';
 
 export interface ReflectionAnswers {
-  [questionId: string]: string;
+  question1: string;
+  question2: string;
+  question3: string;
+  question4: string;
+  question5: string;
+  question6: string;
+  question7: string;
 }
 
 export interface Reflection {
@@ -17,6 +23,44 @@ export interface Reflection {
   updated_at: string;
   locked_at: string | null;
 }
+
+export const REFLECTION_QUESTIONS = [
+  {
+    id: 'question1',
+    text: 'What has worked well?',
+    description: 'Reflect on recent successes to identify what to continue'
+  },
+  {
+    id: 'question2',
+    text: "What didn't work so well?",
+    description: 'Evaluate setbacks to understand what needs improvement'
+  },
+  {
+    id: 'question3',
+    text: 'How can I apply what I have learned (actions)?',
+    description: 'Determine actionable steps for the future'
+  },
+  {
+    id: 'question4',
+    text: 'Looking back at last week, how much of my day was spent doing things I actively enjoyed?',
+    description: 'Assess time alignment with fulfillment'
+  },
+  {
+    id: 'question5',
+    text: "How'd that compare to the week before?",
+    description: 'Track enjoyment trends week-to-week'
+  },
+  {
+    id: 'question6',
+    text: 'What would you do if you knew you could not fail?',
+    description: 'Uncover bold aspirations'
+  },
+  {
+    id: 'question7',
+    text: 'When are you going to get out of your comfort zone?',
+    description: 'Encourage growth opportunities'
+  }
+];
 
 export const getCurrentWeekStart = (timezone: string = 'UTC'): Date => {
   const now = new Date();
@@ -46,28 +90,48 @@ export const saveReflection = async (
   weekStartDate: Date,
   answers: ReflectionAnswers,
   passphrase: string,
-  isCompleted: boolean = false
-): Promise<void> => {
+  isCompleted: boolean = false,
+  reflectionId?: string
+): Promise<any> => {
   try {
-    const encryptedContent = encrypt(JSON.stringify(answers), passphrase);
+    const encryptedContent = await ReflectionCrypto.encrypt(answers, passphrase);
     const weekStartString = format(weekStartDate, 'yyyy-MM-dd');
 
-    const { error } = await supabase
-      .from('reflections')
-      .upsert({
-        user_id: userId,
-        week_start_date: weekStartString,
-        encrypted_content: encryptedContent,
-        is_completed: isCompleted,
-        updated_at: new Date().toISOString(),
-      }, {
-        onConflict: 'user_id,week_start_date'
-      });
+    const reflectionData = {
+      user_id: userId,
+      week_start_date: weekStartString,
+      encrypted_content: encryptedContent,
+      is_completed: isCompleted,
+      updated_at: new Date().toISOString(),
+    };
 
-    if (error) {
-      console.error('Supabase error:', error);
-      throw new Error(`Failed to save reflection: ${error.message}`);
+    let result;
+    if (reflectionId) {
+      // Update existing reflection
+      const { data, error } = await supabase
+        .from('reflections')
+        .update(reflectionData)
+        .eq('id', reflectionId)
+        .select()
+        .single();
+      
+      if (error) throw error;
+      result = data;
+    } else {
+      // Create new reflection
+      const { data, error } = await supabase
+        .from('reflections')
+        .upsert(reflectionData, {
+          onConflict: 'user_id,week_start_date'
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+      result = data;
     }
+
+    return result;
   } catch (error: any) {
     console.error('Save reflection error:', error);
     throw new Error(`Failed to save reflection: ${error.message}`);
@@ -78,7 +142,7 @@ export const getReflection = async (
   userId: string,
   weekStartDate: Date,
   passphrase: string
-): Promise<Reflection | null> => {
+): Promise<{ reflection: any; answers: ReflectionAnswers } | null> => {
   try {
     const weekStartString = format(weekStartDate, 'yyyy-MM-dd');
 
@@ -102,18 +166,11 @@ export const getReflection = async (
     if (!data) return null;
 
     try {
-      const decryptedContent = decrypt(data.encrypted_content, passphrase);
-      const answers = JSON.parse(decryptedContent);
+      const answers = await ReflectionCrypto.decrypt(data.encrypted_content, passphrase);
 
       return {
-        id: data.id,
-        user_id: data.user_id,
-        week_start_date: data.week_start_date,
-        answers,
-        is_completed: data.is_completed,
-        created_at: data.created_at,
-        updated_at: data.updated_at,
-        locked_at: data.locked_at,
+        reflection: data,
+        answers
       };
     } catch (decryptError) {
       console.error('Decryption error:', decryptError);

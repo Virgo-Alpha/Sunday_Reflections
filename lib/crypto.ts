@@ -46,3 +46,7 @@ export class ReflectionCrypto {
     }
   }
 }
+
+// Legacy exports for backward compatibility
+export const encrypt = ReflectionCrypto.encrypt;
+export const decrypt = ReflectionCrypto.decrypt;
