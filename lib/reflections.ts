@@ -67,16 +67,8 @@ export const getCurrentWeekStart = (timezone: string = 'UTC'): Date => {
 };
 
 export const isReflectionLocked = (weekStartDate: Date, timezone: string = 'UTC'): boolean => {
-  const now = new Date();
-  
-  // Calculate the Monday after the week start (which is Sunday)
-  const mondayAfterWeek = addDays(weekStartDate, 1);
-  
-  // Set to midnight of that Monday
-  const lockTime = new Date(mondayAfterWeek);
-  lockTime.setHours(0, 0, 0, 0);
-  
-  return isAfter(now, lockTime);
+  // Locking feature removed - reflections are always editable
+  return false;
 };
 
 export const saveReflection = async (
