@@ -22,7 +22,6 @@ import { getProfile } from '@/lib/profile';
 import { exportToPDF, exportToWord, exportToJSON } from '@/lib/export';
 import { useToast } from '@/hooks/use-toast';
 import { format as formatDate, addDays } from 'date-fns';
-import { ArrowLeft, Save, CheckCircle, Lock, PartyPopper, MoreVertical, Download, Trash2, Edit } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 
@@ -230,7 +229,9 @@ export const ReflectionForm: React.FC = () => {
         <Card className="max-w-md mx-auto text-center">
           <CardContent className="p-8">
             <div className="mb-6">
-              <PartyPopper className="h-16 w-16 mx-auto text-green-600 dark:text-green-400 mb-4" />
+              <div className="h-16 w-16 mx-auto bg-green-100 dark:bg-green-900 rounded-full flex items-center justify-center mb-4">
+                <div className="text-green-600 dark:text-green-400 text-2xl">🎉</div>
+              </div>
               <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
                 Reflection Complete!
               </h2>
@@ -262,23 +263,21 @@ export const ReflectionForm: React.FC = () => {
           <div className="flex items-center justify-between">
             <Link href="/dashboard">
               <Button variant="ghost" size="sm">
-                <ArrowLeft className="mr-2 h-4 w-4" />
-                Back to Dashboard
+                ← Back to Dashboard
               </Button>
             </Link>
             
             <div className="flex items-center gap-2">
               {isLocked && (
                 <div className="flex items-center gap-2 text-amber-600 dark:text-amber-400">
-                  <Lock className="h-4 w-4" />
+                  <span className="text-sm">🔒</span>
                   <span className="text-sm font-medium">Read Only</span>
                 </div>
               )}
               
               {isCompleted && !isEditMode && !isLocked && (
                 <Button variant="outline" size="sm" onClick={handleEnableEdit}>
-                  <Edit className="mr-2 h-4 w-4" />
-                  Update Reflection
+                  ✏️ Update Reflection
                 </Button>
               )}
               
@@ -286,21 +285,18 @@ export const ReflectionForm: React.FC = () => {
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <Button variant="outline" size="sm">
-                      <MoreVertical className="h-4 w-4" />
+                      ⋮
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end">
                     <DropdownMenuItem onClick={() => handleExport('pdf')}>
-                      <Download className="mr-2 h-4 w-4" />
-                      Export as PDF
+                      📄 Export as PDF
                     </DropdownMenuItem>
                     <DropdownMenuItem onClick={() => handleExport('word')}>
-                      <Download className="mr-2 h-4 w-4" />
-                      Export as Text
+                      📝 Export as Text
                     </DropdownMenuItem>
                     <DropdownMenuItem onClick={() => handleExport('json')}>
-                      <Download className="mr-2 h-4 w-4" />
-                      Export as JSON
+                      📊 Export as JSON
                     </DropdownMenuItem>
                     <DropdownMenuItem 
                       className="text-red-600 dark:text-red-400"
@@ -309,8 +305,7 @@ export const ReflectionForm: React.FC = () => {
                       <AlertDialog>
                         <AlertDialogTrigger asChild>
                           <div className="flex items-center w-full cursor-pointer">
-                            <Trash2 className="mr-2 h-4 w-4" />
-                            Delete Reflection
+                            🗑️ Delete Reflection
                           </div>
                         </AlertDialogTrigger>
                         <AlertDialogContent>
@@ -403,8 +398,7 @@ export const ReflectionForm: React.FC = () => {
                   </>
                 ) : (
                   <>
-                    <Save className="mr-2 h-4 w-4" />
-                    Save Draft
+                    💾 Save Draft
                   </>
                 )}
               </Button>
@@ -419,8 +413,7 @@ export const ReflectionForm: React.FC = () => {
                   </>
                 ) : (
                   <>
-                    <CheckCircle className="mr-2 h-4 w-4" />
-                    Complete Reflection
+                    ✅ Complete Reflection
                   </>
                 )}
               </Button>
