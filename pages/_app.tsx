@@ -2,7 +2,7 @@ import '../app/globals.css';
 import type { AppProps } from 'next/app';
 import { ThemeProvider } from '@/components/ui/theme-provider';
 import { AuthProvider } from '@/contexts/AuthContext';
-import { PassphraseProvider } from '@/contexts/PassphraseProvider';
+import { PassphraseProvider } from '@/contexts/PassphraseContext';
 import { Toaster } from '@/components/ui/sonner';
 import { BoltBadge } from '@/components/BoltBadge';
 
