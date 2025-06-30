@@ -42,7 +42,7 @@ export const ReflectionForm: React.FC = () => {
   });
   
   const [currentQuestion, setCurrentQuestion] = useState(0);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(false); // Changed from true to false
   const [isSaving, setIsSaving] = useState(false);
   const [weekStartDate, setWeekStartDate] = useState<Date>(getCurrentWeekStart());
   const [isLocked, setIsLocked] = useState(false);
@@ -61,13 +61,24 @@ export const ReflectionForm: React.FC = () => {
 
   useEffect(() => {
     const loadReflection = async () => {
-      if (!user || !passphrase) return;
+      // Early return if user or passphrase not available
+      if (!user || !passphrase) {
+        console.log('🔍 ReflectionForm: User or passphrase not available, skipping load');
+        setIsLoading(false);
+        return;
+      }
+
+      // Set loading to true only after confirming we have required data
+      setIsLoading(true);
+      console.log('🔄 ReflectionForm: Starting to load reflection data');
 
       try {
         // Get user timezone
+        console.log('🌍 Getting user profile for timezone...');
         const profile = await getProfile(user.id);
         const timezone = profile?.timezone || 'UTC';
         setUserTimezone(timezone);
+        console.log('✅ User timezone set to:', timezone);
 
         // Determine which week to load
         const weekParam = router.query.week as string;
@@ -77,29 +88,41 @@ export const ReflectionForm: React.FC = () => {
         
         setWeekStartDate(targetWeekStart);
         setIsLocked(isReflectionLocked(targetWeekStart, timezone));
+        console.log('📅 Target week start:', targetWeekStart.toISOString());
 
         // Try to load existing reflection
+        console.log('🔍 Attempting to load existing reflection...');
         const existingReflection = await getReflection(user.id, targetWeekStart, passphrase);
+        
         if (existingReflection) {
+          console.log('✅ Found existing reflection:', existingReflection.reflection.id);
           setAnswers(existingReflection.answers);
           setReflectionId(existingReflection.reflection.id);
           setIsCompleted(existingReflection.reflection.is_completed);
           // If reflection is completed, start in read-only mode
           setIsEditMode(!existingReflection.reflection.is_completed);
         } else {
+          console.log('ℹ️ No existing reflection found, starting fresh');
           // New reflection, start in edit mode
           setIsEditMode(true);
         }
       } catch (error: any) {
-        console.error('Error loading reflection:', error);
+        console.error('💥 Error loading reflection:', error);
         if (error.message.includes('passphrase')) {
           safeToast({
             title: 'Invalid passphrase',
             description: 'Please refresh and enter the correct passphrase.',
             variant: 'destructive',
           });
+        } else {
+          safeToast({
+            title: 'Error loading reflection',
+            description: 'There was an issue loading your reflection. Please try refreshing the page.',
+            variant: 'destructive',
+          });
         }
       } finally {
+        console.log('🏁 ReflectionForm: Load complete, setting isLoading to false');
         setIsLoading(false);
       }
     };
@@ -239,7 +262,10 @@ export const ReflectionForm: React.FC = () => {
   if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+        <div className="text-center space-y-4">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
+          <p className="text-gray-600 dark:text-gray-400">Loading your reflection...</p>
+        </div>
       </div>
     );
   }
