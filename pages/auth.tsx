@@ -1,5 +1,6 @@
+'use client';
+
 import React from 'react';
-import { GetServerSideProps } from 'next';
 import { useAuth } from '@/contexts/AuthContext';
 import { AuthForm } from '@/components/auth/AuthForm';
 import { useRouter } from 'next/router';
@@ -29,9 +30,3 @@ export default function AuthPage() {
 
   return <AuthForm />;
 }
-
-export const getServerSideProps: GetServerSideProps = async (context) => {
-  return {
-    props: {},
-  };
-};

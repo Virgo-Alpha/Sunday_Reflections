@@ -1,5 +1,6 @@
+'use client';
+
 import React from 'react';
-import { GetServerSideProps } from 'next';
 import { useAuth } from '@/contexts/AuthContext';
 import { usePassphrase } from '@/contexts/PassphraseContext';
 import { ReflectionForm } from '@/components/reflection/ReflectionForm';
@@ -36,9 +37,3 @@ export default function ReflectPage() {
 
   return <ReflectionForm />;
 }
-
-export const getServerSideProps: GetServerSideProps = async (context) => {
-  return {
-    props: {},
-  };
-};

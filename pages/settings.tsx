@@ -1,5 +1,6 @@
+'use client';
+
 import React from 'react';
-import { GetServerSideProps } from 'next';
 import { useAuth } from '@/contexts/AuthContext';
 import { Settings } from '@/components/settings/Settings';
 import { useRouter } from 'next/router';
@@ -29,9 +30,3 @@ export default function SettingsPage() {
 
   return <Settings />;
 }
-
-export const getServerSideProps: GetServerSideProps = async (context) => {
-  return {
-    props: {},
-  };
-};

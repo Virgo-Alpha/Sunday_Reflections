@@ -1,5 +1,6 @@
+'use client';
+
 import React from 'react';
-import { GetServerSideProps } from 'next';
 import { useAuth } from '@/contexts/AuthContext';
 import { usePassphrase } from '@/contexts/PassphraseContext';
 import { Dashboard } from '@/components/dashboard/Dashboard';
@@ -36,9 +37,3 @@ export default function DashboardPage() {
 
   return <Dashboard />;
 }
-
-export const getServerSideProps: GetServerSideProps = async (context) => {
-  return {
-    props: {},
-  };
-};
