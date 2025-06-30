@@ -1,7 +1,8 @@
 import { supabase } from './supabase';
 import { ReflectionCrypto } from './crypto';
 import { startOfWeek, addDays, isAfter, format } from 'date-fns';
-import { zonedTimeToUtc, utcToZonedTime } from 'date-fns-tz';
+import { zonedTimeToUtc } from 'date-fns-tz/zonedTimeToUtc';
+import { utcToZonedTime } from 'date-fns-tz/utcToZonedTime';
 
 export interface ReflectionAnswers {
   question1: string;
