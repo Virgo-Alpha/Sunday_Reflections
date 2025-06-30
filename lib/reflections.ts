@@ -79,9 +79,22 @@ export const saveReflection = async (
   isCompleted: boolean = false,
   reflectionId?: string
 ): Promise<any> => {
+  console.log('🔍 saveReflection called with:', {
+    userId,
+    weekStartDate: weekStartDate.toISOString(),
+    isCompleted,
+    reflectionId,
+    answersLength: Object.values(answers).filter(a => a.trim()).length
+  });
+
   try {
+    // Log encryption attempt
+    console.log('🔐 Attempting to encrypt reflection content...');
     const encryptedContent = await encryptReflection(answers, passphrase);
+    console.log('✅ Encryption successful, encrypted content length:', encryptedContent.length);
+
     const weekStartString = format(weekStartDate, 'yyyy-MM-dd');
+    console.log('📅 Week start string:', weekStartString);
 
     const reflectionData = {
       user_id: userId,
@@ -91,9 +104,15 @@ export const saveReflection = async (
       updated_at: new Date().toISOString(),
     };
 
+    console.log('📝 Reflection data to save:', {
+      ...reflectionData,
+      encrypted_content: `[ENCRYPTED - ${encryptedContent.length} chars]`
+    });
+
     let result;
     if (reflectionId) {
       // Update existing reflection
+      console.log('🔄 Updating existing reflection with ID:', reflectionId);
       const { data, error } = await supabase
         .from('reflections')
         .update(reflectionData)
@@ -101,10 +120,23 @@ export const saveReflection = async (
         .select()
         .single();
       
-      if (error) throw error;
+      if (error) {
+        console.error('❌ Supabase UPDATE error:', {
+          error,
+          code: error.code,
+          message: error.message,
+          details: error.details,
+          hint: error.hint,
+          reflectionId
+        });
+        throw error;
+      }
+      
+      console.log('✅ UPDATE successful:', data);
       result = data;
     } else {
       // Create new reflection
+      console.log('➕ Creating new reflection (upsert)...');
       const { data, error } = await supabase
         .from('reflections')
         .upsert(reflectionData, {
@@ -113,13 +145,50 @@ export const saveReflection = async (
         .select()
         .single();
 
-      if (error) throw error;
+      if (error) {
+        console.error('❌ Supabase UPSERT error:', {
+          error,
+          code: error.code,
+          message: error.message,
+          details: error.details,
+          hint: error.hint,
+          reflectionData: {
+            ...reflectionData,
+            encrypted_content: `[ENCRYPTED - ${encryptedContent.length} chars]`
+          }
+        });
+        throw error;
+      }
+
+      console.log('✅ UPSERT successful:', data);
       result = data;
     }
 
+    console.log('🎉 saveReflection completed successfully');
     return result;
   } catch (error: any) {
-    console.error('Save reflection error:', error);
+    console.error('💥 saveReflection failed:', {
+      error,
+      errorType: typeof error,
+      errorConstructor: error.constructor.name,
+      message: error.message,
+      stack: error.stack,
+      userId,
+      weekStartDate: weekStartDate.toISOString(),
+      isCompleted,
+      reflectionId
+    });
+
+    // Check if it's a Supabase error with additional details
+    if (error.code) {
+      console.error('🔍 Supabase error details:', {
+        code: error.code,
+        message: error.message,
+        details: error.details,
+        hint: error.hint
+      });
+    }
+
     throw new Error(`Failed to save reflection: ${error.message}`);
   }
 };
