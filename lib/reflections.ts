@@ -1,5 +1,5 @@
 import { supabase } from './supabase';
-import { ReflectionCrypto } from './crypto';
+import { encryptReflection, decryptReflection } from './client-crypto';
 import { startOfWeek, addDays, isAfter, format } from 'date-fns';
 
 export interface ReflectionAnswers {
@@ -80,7 +80,7 @@ export const saveReflection = async (
   reflectionId?: string
 ): Promise<any> => {
   try {
-    const encryptedContent = await ReflectionCrypto.encrypt(answers, passphrase);
+    const encryptedContent = await encryptReflection(answers, passphrase);
     const weekStartString = format(weekStartDate, 'yyyy-MM-dd');
 
     const reflectionData = {
@@ -152,7 +152,7 @@ export const getReflection = async (
     if (!data) return null;
 
     try {
-      const answers = await ReflectionCrypto.decrypt(data.encrypted_content, passphrase);
+      const answers = await decryptReflection(data.encrypted_content, passphrase);
 
       return {
         reflection: data,
