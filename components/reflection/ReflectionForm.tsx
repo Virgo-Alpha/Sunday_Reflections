@@ -23,14 +23,13 @@ import { exportToPDF, exportToWord, exportToJSON } from '@/lib/export';
 import { useToast } from '@/hooks/use-toast';
 import { format as formatDate, addDays } from 'date-fns';
 import Link from 'next/link';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useRouter } from 'next/router';
 
 export const ReflectionForm: React.FC = () => {
   const { user } = useAuth();
   const { passphrase } = usePassphrase();
   const { toast } = useToast();
   const router = useRouter();
-  const searchParams = useSearchParams();
   
   const [answers, setAnswers] = useState<ReflectionAnswers>({
     question1: '',
@@ -71,7 +70,7 @@ export const ReflectionForm: React.FC = () => {
         setUserTimezone(timezone);
 
         // Determine which week to load
-        const weekParam = searchParams.get('week');
+        const weekParam = router.query.week as string;
         const targetWeekStart = weekParam 
           ? new Date(weekParam) 
           : getCurrentWeekStart(timezone);
@@ -106,7 +105,7 @@ export const ReflectionForm: React.FC = () => {
     };
 
     loadReflection();
-  }, [user, passphrase, searchParams]);
+  }, [user, passphrase, router.query.week]);
 
   const handleAnswerChange = (questionId: string, value: string) => {
     setAnswers(prev => ({

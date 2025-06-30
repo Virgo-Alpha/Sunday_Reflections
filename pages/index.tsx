@@ -1,17 +1,14 @@
-'use client';
-
 import React from 'react';
+import { GetServerSideProps } from 'next';
 import { useAuth } from '@/contexts/AuthContext';
 import { usePassphrase } from '@/contexts/PassphraseContext';
 import { HomePage } from '@/components/home/HomePage';
-import { AuthForm } from '@/components/auth/AuthForm';
 import { PassphraseSetup } from '@/components/auth/PassphraseSetup';
-import { PassphrasePrompt } from '@/components/auth/PassphrasePrompt';
 import { Dashboard } from '@/components/dashboard/Dashboard';
 
 export default function Home() {
   const { user, loading } = useAuth();
-  const { passphrase, isPassphraseSet } = usePassphrase();
+  const { isPassphraseSet } = usePassphrase();
 
   if (loading) {
     return (
@@ -34,3 +31,10 @@ export default function Home() {
   // Authenticated and passphrase set - show dashboard
   return <Dashboard />;
 }
+
+export const getServerSideProps: GetServerSideProps = async (context) => {
+  // Return empty props since we handle auth client-side
+  return {
+    props: {},
+  };
+};
