@@ -15,11 +15,13 @@ export default function ReflectPage() {
 
   useEffect(() => {
     // Only redirect if loading is complete and user is still not logged in
-    if (!loading && !user && !isRedirecting) {
-      setIsRedirecting(true);
-      router.push('/');
+    if (!loading && !user) {
+      if (!isRedirecting) {
+        setIsRedirecting(true);
+        router.push('/');
+      }
     }
-  }, [user, loading, isRedirecting, router]);
+  }, [user, loading]);
 
   // Show loading spinner while authentication is being determined or while redirecting
   if (loading || isRedirecting) {
